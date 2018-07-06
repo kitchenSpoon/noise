@@ -16,7 +16,7 @@ type plugin struct {
 func (state *plugin) Startup(net *network.Network) {
 	glog.Info("Setting up UPnP...")
 
-	info, err := network.ExtractAddressInfo(net.Address)
+	info, err := network.ParseAddress(net.Address())
 	if err != nil {
 		return
 	}
@@ -25,7 +25,7 @@ func (state *plugin) Startup(net *network.Network) {
 	if err == nil {
 		defer mapping.Close()
 
-		addressInfo, err := network.ExtractAddressInfo(net.Address)
+		addressInfo, err := network.ParseAddress(net.Address())
 		if err != nil {
 			glog.Fatal(err)
 		}
@@ -34,8 +34,8 @@ func (state *plugin) Startup(net *network.Network) {
 		addressInfo.Port = mapping.ExternalPort
 
 		// Set peer information base off of port mapping info.
-		net.Address = addressInfo.String()
-		net.ID = peer.CreateID(net.Address, net.Keys.PublicKey)
+		net.SetAddress(addressInfo.String())
+		net.ID = peer.CreateID(net.Address(), net.Keys.PublicKey)
 
 		// Keep reference to port mapping.
 		state.mapping = mapping
