@@ -104,7 +104,6 @@ func (builder *NetworkBuilder) Build() (*network.Network, error) {
 	net := &network.Network{
 		ID:      id,
 		Keys:    builder.keys,
-		Address: unifiedAddress,
 
 		Plugins: builder.plugins,
 
@@ -118,6 +117,10 @@ func (builder *NetworkBuilder) Build() (*network.Network, error) {
 
 		SignaturePolicy: builder.signaturePolicy,
 		HashPolicy: builder.hashPolicy,
+	}
+	err = net.SetAddress(unifiedAddress)
+	if err != nil {
+		return nil, err
 	}
 
 	net.Init()

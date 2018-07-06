@@ -30,7 +30,7 @@ type Network struct {
 	Keys *crypto.KeyPair
 
 	// Full address to listen on. `protocol://host:port`
-	Address string
+	address *AddressInfo
 
 	// Map of plugins registered to the network.
 	// map[string]Plugin
@@ -54,6 +54,19 @@ type Network struct {
 
 	SignaturePolicy crypto.SignaturePolicy
 	HashPolicy crypto.HashPolicy
+}
+
+func (n *Network) SetAddress(addr string) error {
+	info, err := ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	n.address = info
+	return nil
+}
+
+func (n *Network) Address() string {
+	return n.address.String()
 }
 
 // Init starts all network I/O workers.
@@ -157,22 +170,18 @@ func (n *Network) Listen() {
 		})
 	}()
 
-	urlInfo, err := url.Parse(n.Address)
-	if err != nil {
-		glog.Fatal(err)
-	}
-
 	var listener net.Listener
+	var err error
 
-	if urlInfo.Scheme == "kcp" {
-		listener, err = kcp.ListenWithOptions(urlInfo.Host, nil, 10, 3)
+	if n.address.Protocol == "kcp" {
+		listener, err = kcp.ListenWithOptions(n.address.Raw(), nil, 10, 3)
 		if err != nil {
 			glog.Fatal(err)
 		}
-	} else if urlInfo.Scheme == "tcp" {
-		listener, err = net.Listen("tcp", urlInfo.Host)
+	} else if n.address.Protocol == "tcp" {
+		listener, err = net.Listen("tcp", n.address.Raw())
 	} else {
-		err = errors.New("invalid scheme: " + urlInfo.Scheme)
+		err = errors.New("invalid protocol: " + n.address.Protocol)
 	}
 
 	if err != nil {
@@ -181,7 +190,7 @@ func (n *Network) Listen() {
 
 	close(n.Listening)
 
-	glog.Infof("Listening for peers on %s.", n.Address)
+	glog.Infof("Listening for peers on %s.", n.Address())
 
 	// Handle new clients.
 	for {
@@ -200,7 +209,7 @@ func (n *Network) Client(address string) (*PeerClient, error) {
 		return nil, err
 	}
 
-	if address == n.Address {
+	if address == n.Address() {
 		return nil, errors.New("peer should not dial itself")
 	}
 
@@ -231,7 +240,7 @@ func (n *Network) BlockUntilListening() {
 func (n *Network) Bootstrap(addresses ...string) {
 	n.BlockUntilListening()
 
-	addresses = FilterPeers(n.Address, addresses)
+	addresses = FilterPeers(n.Address(), addresses)
 
 	for _, address := range addresses {
 		client, err := n.Client(address)
