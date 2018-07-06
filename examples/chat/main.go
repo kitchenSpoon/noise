@@ -77,7 +77,7 @@ func main() {
 			continue
 		}
 
-		glog.Infof("<%s> %s", net.Address, input)
+		glog.Infof("<%s> %s", net.Address(), input)
 
 		net.Broadcast(&messages.ChatMessage{Message: input})
 	}

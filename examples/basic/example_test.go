@@ -63,7 +63,7 @@ func ExampleBasic() {
 
 		// Bootstrap to Node 0.
 		if i != 0 {
-			node.Bootstrap(nodes[0].Address)
+			node.Bootstrap(nodes[0].Address())
 		}
 
 		nodes = append(nodes, node)
